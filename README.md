@@ -31,26 +31,6 @@ To be able to access your data, you need to have an Netatmo Application and gran
 
 Your can register a new app [here](https://dev.netatmo.com/dev/createapp). Afterwards you will get an APP_ID and an APP_SECRET which you will need to enter in the [config entries](#configuration).
 
-#### Grant Access to Your Data
-
-To allow the app to access your data, you need to send a POST request to the auth server and register the app.
-
-##### cURL
-
-One option is to use the command line tool [cURL](https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=0ahUKEwjqgN789KnaAhUBalAKHR-NDLoQFgg2MAE&url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FCURL&usg=AOvVaw27-lfQBHvLQPR2qsddIR6U). 
-
-```
-curl --data "grant_type=password&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&username=YOUR_NETATMO_USERNAME&password=YOUR_NETATMO_PASSWORD&scope=read_station" "https://api.netatmo.com/oauth2/token"
-```
-
-The POST request will return the following data:
-
-```
-{"access_token":"abc","refresh_token":"xyz","scope":["read_station"],"expires_in":10800,"expire_in":10800}
-```
-
-The REFRESH_TOKEN will be needed in the [config entries](#configuration).
-
 ### Configuration
 
 The module needs the default configuration block in your config.js to work.
@@ -63,7 +43,8 @@ The module needs the default configuration block in your config.js to work.
 	config: {
 		clientId: '', // your app id
 		clientSecret: '', // your app secret
-		refreshToken: '', // your generated refresh token
+		username: '', // netatmo username
+		password: '', // netatmo password
 		
 		location: "germany/berlin",  //for AirQuality
 		updateIntervalAirQuality: 600, // in secondes = every 30 minutes
@@ -91,7 +72,8 @@ The following properties can be configured:
 |---|---|
 |clientId|The ID of your Netatmo [application](https://dev.netatmo.com/dev/listapps).<br><br>This value is **REQUIRED**|
 |clientSecret|The app secret of your Netatmo [application](https://dev.netatmo.com/dev/listapps).<br><br>This value is **REQUIRED**|
-|refreshToken|The generated refresh token you got from the POST request to the auth api.<br><br>This value is **REQUIRED**|
+|username|Netatmo username<br><br>This value is **REQUIRED**|
+|username|Netatmo password<br><br>This value is **REQUIRED**|
 |updatesIntervalDisplay|How often to check if netatmo datas needs to be updated? (Minutes) No Netatmo server request with this value. Netatmo request minimum every 11 min.<br>Data is updated by netatmo every 10 minutes.<br><br>**Default value:** `1`|
 |moduleOrder|The rendering order of your weather modules, ommit a module to hide the output.<br><br>**Example:** `["Kitchen","Kid's Bedroom","Garage","Garden"]` <br>Be aware that you need to use the module names that you set in the netatmo configuration.|
 |location|For AirQuality display. Use the part behind http://aqicn.org/city/ for your location. For example http://aqicn.org/city/netherland/utrecht/griftpark/<br><br>**Example:** `'germany/berlin'`|
