@@ -91,9 +91,9 @@ Module.register("MMM-Netatmo", {
 		api: {
 			base: "https://api.netatmo.com/",
 			authEndpoint: "oauth2/token",
-			authPayload: "grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}",
 			dataEndpoint: "api/getstationsdata",
-			dataPayload: "access_token={0}"
+			dataPayload: "access_token={0}",
+			authPayload: "scope=read_station&grant_type=password&client_id={0}&client_secret={1}&username={2}&password={3}"
 		}
 	},
 
@@ -227,14 +227,23 @@ Module.register("MMM-Netatmo", {
 	load: {
 		token: function () {
 
-			//Log.log("Netatmo : load - token");
+			Log.log("Netatmo : load - token");
 			return Q($.ajax({
 				type: "POST",
 				url: this.config.api.base + this.config.api.authEndpoint,
+				// + "?scope=read_station"
+				// + "&grant_type=password"
+				// + "&client_id=" + this.config.clientId
+				// + "&client_secret=" + this.config.clientSecret
+				// + "&username=" + this.config.username
+				// + "&password=" + this.config.password,
+				headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 				data: this.config.api.authPayload.format(
-					this.config.refreshToken,
 					this.config.clientId,
-					this.config.clientSecret)
+					this.config.clientSecret,
+					this.config.username,
+					this.config.password,
+					)
 			}));
 		},
 
@@ -591,28 +600,31 @@ Module.register("MMM-Netatmo", {
 						}
 
 						if (ModuleMap && ModuleMap.size > 0) {
+							let moduleSize = ModuleMap.size;
+							let counter = 1;
 							for (let [moduleName, module] of ModuleMap) {
 								switch (module.type) {
 									case NetatmoModuleType.MAIN:
 									case NetatmoModuleType.INDOOR:
-										sResult.append(this.module(module));
+										sResult.append(this.module(module, counter === moduleSize));
 										break;
 									case NetatmoModuleType.OUTDOOR:
-										sResult.append(this.module(module));
+										sResult.append(this.module(module, counter === moduleSize));
 										break;
 
 									case NetatmoModuleType.WIND:
 										if (!(that.config.displayWindInOutdoor)) {
-											sResult.append(this.module(module));
+											sResult.append(this.module(module, counter === moduleSize));
 										}
 										break;
 
 									case NetatmoModuleType.RAIN:
 										if (!(that.config.displayRainInOutdoor)) {
-											sResult.append(this.module(module));
+											sResult.append(this.module(module, counter === moduleSize));
 										}
 										break;
 								}
+								counter++;
 							}
 						}
 						// Log.log("ModuleTypeMap: " + ModuleTypeMap.size);
@@ -622,7 +634,7 @@ Module.register("MMM-Netatmo", {
 						return sResult;
 					},
 					//Defined the overall structure of the display of each element of the module (indoor, outdoor). The last line being in the getDom
-					module: function (module) {
+					module: function (module, isLast) {
 						var type;
 						var value;
 						Log.log("MMM-Netatmo add module: " + module.module_name);
@@ -635,7 +647,7 @@ Module.register("MMM-Netatmo", {
 							this.addData(module).appendTo(result);
 						}
 						if (that.config.showModuleStatus) { this.addStatus(module).appendTo(result); }
-						$("<div/>").addClass("line").appendTo(result);
+						if (!isLast) { $("<div/>").addClass("line").appendTo(result); }
 						return result[0].outerHTML;
 					},
 					addPrimary: function (module) {
@@ -786,6 +798,7 @@ Module.register("MMM-Netatmo", {
 						divDataContainer.appendTo(divData);
 
 						// DATA TEMP MIN MAX
+						/*
 						let divDataContainerBottom = $("<div/>").addClass("data_container_align");
 						let divDCBottomMin = $("<div/>").addClass("data_container");
 						let divDCBottomMax = $("<div/>").addClass("data_container");
@@ -808,6 +821,7 @@ Module.register("MMM-Netatmo", {
 						divDCBottomMin.appendTo(divDataContainerBottom);
 						divDCBottomMax.appendTo(divDataContainerBottom);
 						divDataContainerBottom.appendTo(divData);
+						*/
 						divData.appendTo(result);
 						return result;
 					},
@@ -1055,15 +1069,21 @@ Module.register("MMM-Netatmo", {
 	getDom: function () {
 
 		Log.log("MMM-Netatmo : getDom");
-		var dom = $("<div/>").addClass("MMM-netatmo").addClass(this.config.design);
+		var dom = $("<div/>")
+			.addClass("MMM-netatmo")
+			.addClass("transparent-container")
+			.addClass(this.config.design);
 		if (this.dom) {
 			dom.append(
 				this.dom
-			).append(
+			);
+			/*
+			.append(
 				$("<div/>")
 					.addClass("updated xsmall")
 					.append(moment(new Date(1000 * this.lastUpdate)).fromNow())
 			);
+			*/
 			if (!this.config.hideLoadTimer) {
 				dom.append($(
 					"<svg class=\"loadTimer\" viewbox=\"0 0 250 250\">" +
