@@ -93,7 +93,8 @@ Module.register("MMM-Netatmo", {
 			authEndpoint: "oauth2/token",
 			dataEndpoint: "api/getstationsdata",
 			dataPayload: "access_token={0}",
-			authPayload: "scope=read_station&grant_type=password&client_id={0}&client_secret={1}&username={2}&password={3}"
+			authPayload: "grant_type=authorization_code&client_id={0}&client_secret={1}&code={2}&redirect_uri=http://0.0.0.0:8080&scope=read_station",
+			refreshTokenPayload: "grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}"
 		}
 	},
 
@@ -125,6 +126,7 @@ Module.register("MMM-Netatmo", {
 	resume: function () { // core called when the module is displayed
 		ModuleNetatmoHidden = false;
 		Log.log("Resume - Module Netatmo display");
+		this.updateLoad();
 		this.GestionUpdateIntervalNetatmo();
 	},
 
@@ -227,30 +229,27 @@ Module.register("MMM-Netatmo", {
 	load: {
 		token: function () {
 
-			Log.log("Netatmo : load - token");
+			Log.log("Netatmo : refresh token");
+			let data = this.config.api.refreshTokenPayload.format(
+				this.config.refreshToken,
+				this.config.clientId,
+				this.config.clientSecret);
+			Log.log("data: " + data)
+
 			return Q($.ajax({
 				type: "POST",
 				url: this.config.api.base + this.config.api.authEndpoint,
-				// + "?scope=read_station"
-				// + "&grant_type=password"
-				// + "&client_id=" + this.config.clientId
-				// + "&client_secret=" + this.config.clientSecret
-				// + "&username=" + this.config.username
-				// + "&password=" + this.config.password,
 				headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-				data: this.config.api.authPayload.format(
-					this.config.clientId,
-					this.config.clientSecret,
-					this.config.username,
-					this.config.password,
-					)
+				data: data
 			}));
 		},
 
 		data: function (data) {
 
-			// Log.log("Netatmo : load - data");
-			//Log.info(this.name + " token loaded "+data.access_token);
+			Log.log("Netatmo : load - data");
+			Log.info("access_token: " + data.access_token);
+			Log.info("refresh_token: " + data.refresh_token);
+
 			this.config.refreshToken = data.refresh_token;
 			// call for station data
 			return Q($.ajax({
@@ -263,8 +262,7 @@ Module.register("MMM-Netatmo", {
 
 	renderAll: function (data) {
 
-		// Log.log("Netatmo : renderAll");
-		// Log.info(this.name + " data loaded, updated "+moment(new Date(1000*device.dashboard_data.time_utc)).fromNow());
+		Log.log("Netatmo : renderAll");
 		var device = data.body.devices[0];
 		this.lastUpdate = device.dashboard_data.time_utc;
 		lastUpdateServeurNetatmo = device.dashboard_data.time_utc;
@@ -275,7 +273,7 @@ Module.register("MMM-Netatmo", {
 	},
 
 	renderError: function (reason) {
-		console.log("error " + reason);
+		console.log("error " + JSON.stringify(reason));
 	},
 	formatter: {
 		value: function (dataType, value) {
